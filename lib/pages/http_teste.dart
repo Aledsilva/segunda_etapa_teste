@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:segunda_etapa_teste/models/book_model.dart';
+import 'package:segunda_etapa_teste/widgets/book_presentation.dart';
+
+import 'package:flutter_file_downloader/flutter_file_downloader.dart';
 
 class HttpTestePage extends StatefulWidget {
   const HttpTestePage({super.key});
@@ -12,70 +15,74 @@ class HttpTestePage extends StatefulWidget {
 }
 
 class _HttpTestePageState extends State<HttpTestePage> {
-  var response;
+  double? _progress;
+  List<BookModel> _books = [];
+  var url = "https://escribo.com/books.json";
 
-  void connectApi() async {
-    print("Antes");
-    response = await http.get(Uri.parse('https://escribo.com/books.json'));
-    print("Depois");
-    print(response.body);
-    var json = jsonDecode(response.body);
-    var booksModel = BookModel.fromJson(json[0]); // forEach e index
-    print(booksModel.author);
+  Future<List<BookModel>> fetchBooks() async {
+    var response = await http.get(Uri.parse(url));
+
+    var books = <BookModel>[];
+
+    if (response.statusCode == 200) {
+      var booksJson = json.decode(response.body);
+
+      for (var bookJson in booksJson) {
+        books.add(BookModel.fromJson(bookJson));
+        print(books.length);
+      }
+    }
+    return books;
+  }
+
+  @override
+  void initState() {
+    fetchBooks().then((value) {
+      setState(() {
+        _books.addAll(value);
+      });
+    });
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-        child: Scaffold(
+    return Scaffold(
       appBar: AppBar(
-        title: Text("data"),
+        title: const Text("data"),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(2),
         child: GridView.builder(
+          scrollDirection: Axis.vertical,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              childAspectRatio: 0.54, crossAxisCount: 3, mainAxisSpacing: 15),
-          itemCount: 5,
-          itemBuilder: (_, index) {
-            return Padding(
-              padding: const EdgeInsets.all(5),
-              child: Column(
-                children: [
-                  Expanded(
-                    flex: 8,
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: double.infinity,
-                      child: Image.network(
-                        "https://www.gutenberg.org/cache/epub/72134/pg72134.cover.medium.jpg",
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    "The Bible of Nature",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                        color: Colors.black87),
-                  ),
-                  Text(
-                    "Oswald, Felix L.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
+              childAspectRatio: 0.54, crossAxisCount: 3, mainAxisSpacing: 3),
+          itemCount: _books.length,
+          itemBuilder: (BuildContext context, index) {
+            return GestureDetector(
+              child: BookPresentantion(
+                  image: _books[index].coverUrl.toString(),
+                  title: _books[index].title.toString(),
+                  author: _books[index].author.toString()),
+              onTap: () {
+                FileDownloader.downloadFile(
+                    url: _books[index].downloadUrl.toString(),
+                    onProgress: (name, progress) {
+                      setState(() {
+                        _progress = progress;
+                      });
+                    },
+                    onDownloadCompleted: (value) {
+                      print('path $value');
+                      setState(() {
+                        _progress = null;
+                      });
+                    });
+              },
             );
           },
         ),
       ),
-      floatingActionButton: (FloatingActionButton(
-        child: Icon(Icons.add),
-        onPressed: () {},
-      )),
-    ));
+    );
   }
 }
