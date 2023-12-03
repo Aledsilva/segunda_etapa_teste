@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:segunda_etapa_teste/models/book_model.dart';
@@ -7,15 +8,20 @@ import 'package:segunda_etapa_teste/widgets/book_presentation.dart';
 
 import 'package:flutter_file_downloader/flutter_file_downloader.dart';
 
-class HttpTestePage extends StatefulWidget {
-  const HttpTestePage({super.key});
+import 'package:path_provider/path_provider.dart';
+
+class LibraryHomePage extends StatefulWidget {
+  const LibraryHomePage({super.key});
 
   @override
-  State<HttpTestePage> createState() => _HttpTestePageState();
+  State<LibraryHomePage> createState() => _LibraryHomePageState();
 }
 
-class _HttpTestePageState extends State<HttpTestePage> {
-  double? _progress;
+class _LibraryHomePageState extends State<LibraryHomePage> {
+  String downloadMessage = "Iniciando...";
+  bool _isDownloading = false;
+  double? _percentage;
+
   List<BookModel> _books = [];
   var url = "https://escribo.com/books.json";
 
@@ -49,14 +55,16 @@ class _HttpTestePageState extends State<HttpTestePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("data"),
+        backgroundColor: Colors.cyanAccent.shade200,
+        title: const Text("Estante Virtual"),
       ),
+      backgroundColor: Colors.grey.shade100,
       body: Padding(
         padding: const EdgeInsets.all(2),
         child: GridView.builder(
           scrollDirection: Axis.vertical,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              childAspectRatio: 0.54, crossAxisCount: 3, mainAxisSpacing: 3),
+              childAspectRatio: 0.7, crossAxisCount: 2, mainAxisSpacing: 5),
           itemCount: _books.length,
           itemBuilder: (BuildContext context, index) {
             return GestureDetector(
@@ -64,23 +72,38 @@ class _HttpTestePageState extends State<HttpTestePage> {
                   image: _books[index].coverUrl.toString(),
                   title: _books[index].title.toString(),
                   author: _books[index].author.toString()),
-              onTap: () {
-                FileDownloader.downloadFile(
-                    url: _books[index].downloadUrl.toString(),
-                    onProgress: (name, progress) {
-                      setState(() {
-                        _progress = progress;
-                      });
-                    },
-                    onDownloadCompleted: (value) {
-                      print('path $value');
-                      setState(() {
-                        _progress = null;
-                      });
-                    });
+              onTap: () async {
+                setState(() {
+                  _isDownloading = true;
+                });
+
+                var dir = await getExternalStorageDirectory();
+
+                Dio dio = Dio();
+                dio.download(
+                    _books[index].downloadUrl.toString(), '${dir?.path}/sample',
+                    onReceiveProgress: (actualBytes, totalBytes) {
+                  _percentage = actualBytes / totalBytes * 100;
+                  setState(() {
+                    downloadMessage = '${_percentage?.floor().toString()} %';
+                    _percentage;
+                  });
+
+                  print(' aquii $_percentage');
+                });
               },
             );
           },
+        ),
+      ),
+      floatingActionButton: Container(
+        child: Row(
+          children: [
+            Text(downloadMessage ?? ''),
+            CircularProgressIndicator(
+              value: _percentage,
+            )
+          ],
         ),
       ),
     );

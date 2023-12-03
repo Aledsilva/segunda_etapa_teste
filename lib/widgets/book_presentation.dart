@@ -13,7 +13,7 @@ class BookPresentantion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-        color: Colors.amber,
+        color: Colors.grey.shade50,
         elevation: 1.5,
         child: Padding(
           padding: const EdgeInsets.all(8.0),
