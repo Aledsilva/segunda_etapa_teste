@@ -19,12 +19,14 @@ class BookPresentantion extends StatelessWidget {
           padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
-              Image.network(
-                image,
-                height: 180,
-                width: 120,
-                fit: BoxFit.fill,
-              ),
+              image.isNotEmpty
+                  ? Image.network(
+                      image,
+                      height: 180,
+                      width: 120,
+                      fit: BoxFit.fill,
+                    )
+                  : const CircularProgressIndicator(),
               const SizedBox(
                 height: 10,
               ),

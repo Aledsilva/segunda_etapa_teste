@@ -22,6 +22,8 @@ class _LibraryHomePageState extends State<LibraryHomePage> {
   bool _isDownloading = false;
   double? _percentage;
 
+  Dio dio = Dio();
+
   List<BookModel> _books = [];
   var url = "https://escribo.com/books.json";
 
@@ -69,41 +71,33 @@ class _LibraryHomePageState extends State<LibraryHomePage> {
           itemBuilder: (BuildContext context, index) {
             return GestureDetector(
               child: BookPresentantion(
-                  image: _books[index].coverUrl.toString(),
-                  title: _books[index].title.toString(),
-                  author: _books[index].author.toString()),
+                image: _books[index].coverUrl.toString(),
+                title: _books[index].title.toString(),
+                author: _books[index].author.toString(),
+              ),
               onTap: () async {
                 setState(() {
                   _isDownloading = true;
                 });
 
+                //TODO remover a função daqui e apenas chama-la
                 var dir = await getExternalStorageDirectory();
-
-                Dio dio = Dio();
                 dio.download(
                     _books[index].downloadUrl.toString(), '${dir?.path}/sample',
                     onReceiveProgress: (actualBytes, totalBytes) {
                   _percentage = actualBytes / totalBytes * 100;
                   setState(() {
                     downloadMessage = '${_percentage?.floor().toString()} %';
-                    _percentage;
+                    _percentage?.toInt();
                   });
 
-                  print(' aquii $_percentage');
+                  //TODO Exibir o download, ou na grid ou em uma dialog
+                  print(
+                      '${_books[index].title} : Downloading... $_percentage %');
                 });
               },
             );
           },
-        ),
-      ),
-      floatingActionButton: Container(
-        child: Row(
-          children: [
-            Text(downloadMessage ?? ''),
-            CircularProgressIndicator(
-              value: _percentage,
-            )
-          ],
         ),
       ),
     );
